@@ -1,6 +1,6 @@
 # Unlicode
 
-**An Open Source IDE with Unlimited Tokens/Request for Agents Powered by Local LLM's.**  
+An Open Source IDE with Unlimited Tokens/Request for Agents Powered by Local LLM's.
 
 ## Motivation
 Developers today face token limits, request caps, and privacy concerns when using cloud-based AI assistants.  
