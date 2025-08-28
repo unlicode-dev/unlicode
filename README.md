@@ -1,40 +1,43 @@
-# Welcome to Void.
+# Unlicode
 
-<div align="center">
-	<img
-		src="./src/vs/workbench/browser/parts/editor/media/slice_of_void.png"
-	 	alt="Void Welcome"
-		width="300"
-	 	height="300"
-	/>
-</div>
+An Open Source IDE with Unlimited Tokens/Request for Agents Powered by Local LLM's.
 
-Void is the open-source Cursor alternative.
+## Motivation
+Developers today face token limits, request caps, and privacy concerns when using cloud-based AI assistants.  
+Unlicode removes those barriers by running local LLMs, giving you:
+- Unlimited tokens and requests.
+- Full data privacy (everything stays local).
+- Agent workflows without restrictions.
 
-Use AI agents on your codebase, checkpoint and visualize changes, and bring any model or host locally. Void sends messages directly to providers without retaining your data.
 
-This repo contains the full sourcecode for Void. If you're new, welcome!
+## Features
 
-- 🧭 [Website](https://voideditor.com)
+### Software Engineer(SWE) Agent
+Based on the popular Kilo Code extension, Unlicode’s SWE Agent allows you to select local or online LLMs, including:  
+- Qwen Coder, GLM Air, Claude, and more.  
+- Full support for top-ranked LLM models.
 
-- 👋 [Discord](https://discord.gg/RSNjgaugJs)
+### Local LLM Optimization
+Supercharge your local LLM to run faster and smarter. Experience higher throughput (TPS) and optimized performance across CPU and GPU setups.  
+- Seamless integration with AMD, Nvidia and other dedicated GPU's.  
+- Speed, Quality and Accuracy improvements for the selected local LLM.
 
-- 🚙 [Project Board](https://github.com/orgs/voideditor/projects/2)
+### Privacy & Security
+Your code, prompt's, and context never leave your machine. Unlicode ensures all communication between your IDE and local LLM remains private and secure.  
 
+### Open Source
+Unlicode is fully open source, allowing everyone to contribute, review, and improve:  
+- Publicly accessible for security audits and bug reports.
+- Community-driven updates and feature enhancements.  
+
+---
 
 ## Contributing
+We welcome contributions from the community!  
 
-1. To get started working on Void, check out our Project Board! You can also see [HOW_TO_CONTRIBUTE](https://github.com/voideditor/void/blob/main/HOW_TO_CONTRIBUTE.md).
+Please ensure your code follows the existing style and includes appropriate tests.  
 
-2. Feel free to attend a casual weekly meeting in our Discord channel!
+---
 
-
-## Reference
-
-Void is a fork of the [vscode](https://github.com/microsoft/vscode) repository. For a guide to the codebase, see [VOID_CODEBASE_GUIDE](https://github.com/voideditor/void/blob/main/VOID_CODEBASE_GUIDE.md).
-
-## Note
-Work is temporarily paused on the Void IDE (this repo) while we experiment with a few novel AI coding ideas for Void. Stay alerted with new releases in our Discord channel.
-
-## Support
-You can always reach us in our Discord server or contact us via email: hello@voideditor.com.
+## License
+This project is licensed under the **Apache License 2.0**. See the [LICENSE](LICENSE) file for details.
