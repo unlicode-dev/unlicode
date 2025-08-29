@@ -1,91 +1,142 @@
 /**
  * Unlicode Branding Patch Script
  *
- * Applies Unlicode branding to Void application by replacing specific text strings
- * in source files. This script is designed to be run during the build process
- * to customize the application with Unlicode branding.
+ * Applies Unlicode branding to Void application with ability to revert changes.
+ * Uses facade pattern to manage branding operations.
  *
  * Usage:
- *   node unlicode-mod/patch.js
- *
- * Sample modification:
- *   Before: <h1>Void's Settings</h1>
- *   After:  <h1>Unlicode AI Assistant Settings</h1>
- *
- *   The script searches for exact text matches and replaces them with
- *   Unlicode branding across all configured files.
+ *   node unlicode-mod/patch.js apply    # Apply branding
+ *   node unlicode-mod/patch.js revert   # Revert to original
  */
 
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Configuration
 const PROJECT_ROOT = path.join(__dirname, '..');
-const BRANDING_REPLACEMENTS = [
+const BRANDING_CONFIG = [
 	{
 		filePath: 'src/vs/workbench/contrib/void/browser/react/src/void-settings-tsx/Settings.tsx',
-		searchText: "Void's Settings",
-		replacementText: "Unlicode AI Assistant Settings Latest"
+		originalText: "Void's Settings",
+		brandedText: "Unlicode AI Assistant Settings Latest"
 	}
 ];
 
-/**
- * Applies branding replacements to configured files
- * @returns {boolean} true if all operations succeeded, false if any errors occurred
- */
-function applyBranding() {
-	let hasErrors = false;
+// Facade class for branding operations
+class BrandingManager {
+	constructor() {
+		this.backupDir = path.join(__dirname, 'backups');
+		this.ensureBackupDir();
+	}
 
-	BRANDING_REPLACEMENTS.forEach(({ filePath, searchText, replacementText }) => {
-		const fullFilePath = path.join(PROJECT_ROOT, filePath);
-
-		// Verify file exists
-		if (!fs.existsSync(fullFilePath)) {
-			console.log(`⚠️  File not found: ${filePath}`);
-			hasErrors = true;
-			return;
+	ensureBackupDir() {
+		if (!fs.existsSync(this.backupDir)) {
+			fs.mkdirSync(this.backupDir, { recursive: true });
 		}
+	}
 
-		try {
-			// Read file content
-			const content = fs.readFileSync(fullFilePath, 'utf8');
+	apply() {
+		console.log('Applying Unlicode Branding...\n');
+		return this.processFiles('apply');
+	}
 
-			// Skip if no replacement needed
-			if (!content.includes(searchText)) {
+	revert() {
+		console.log('Reverting to original branding...\n');
+		return this.processFiles('revert');
+	}
+
+	processFiles(operation) {
+		let hasErrors = false;
+
+		BRANDING_CONFIG.forEach(({ filePath, originalText, brandedText }) => {
+			const fullFilePath = path.join(PROJECT_ROOT, filePath);
+			const backupPath = path.join(this.backupDir, path.basename(filePath));
+
+			if (!fs.existsSync(fullFilePath)) {
+				console.log(`⚠️  File not found: ${filePath}`);
+				hasErrors = true;
 				return;
 			}
 
-			// Apply replacement
-			const updatedContent = content.replace(
-				new RegExp(searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
-				replacementText
-			);
+			try {
+				if (operation === 'apply') {
+					hasErrors = this.applyBranding(fullFilePath, backupPath, originalText, brandedText, filePath);
+				} else {
+					hasErrors = this.revertBranding(fullFilePath, backupPath, filePath);
+				}
+			} catch (error) {
+				console.log(`❌ Error processing ${filePath}: ${error.message}`);
+				hasErrors = true;
+			}
+		});
 
-			// Write updated content
-			fs.writeFileSync(fullFilePath, updatedContent, 'utf8');
-			console.log(`✅ Updated branding in: ${filePath}`);
+		return !hasErrors;
+	}
 
-		} catch (error) {
-			console.log(`❌ Error processing ${filePath}: ${error.message}`);
-			hasErrors = true;
+	applyBranding(filePath, backupPath, originalText, brandedText, displayPath) {
+		const content = fs.readFileSync(filePath, 'utf8');
+
+		if (!content.includes(originalText)) {
+			console.log(`ℹ️  No changes needed in: ${displayPath}`);
+			return false;
 		}
-	});
 
-	return !hasErrors;
+		// Create backup if it doesn't exist
+		if (!fs.existsSync(backupPath)) {
+			fs.writeFileSync(backupPath, content, 'utf8');
+		}
+
+		// Apply replacement
+		const updatedContent = content.replace(
+			new RegExp(originalText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+			brandedText
+		);
+
+		fs.writeFileSync(filePath, updatedContent, 'utf8');
+		console.log(`✅ Applied branding to: ${displayPath}`);
+		return false;
+	}
+
+	revertBranding(filePath, backupPath, displayPath) {
+		if (!fs.existsSync(backupPath)) {
+			console.log(`⚠️  No backup found for: ${displayPath}`);
+			return true;
+		}
+
+		const backupContent = fs.readFileSync(backupPath, 'utf8');
+		fs.writeFileSync(filePath, backupContent, 'utf8');
+		console.log(`✅ Reverted branding in: ${displayPath}`);
+		return false;
+	}
 }
 
 // Main execution
-console.log('Applying Unlicode Branding...\n');
+const command = process.argv[2];
+const manager = new BrandingManager();
 
-if (applyBranding()) {
-	console.log('\n✅ Unlicode branding applied successfully!');
-	process.exit(0);
+if (command === 'apply') {
+	if (manager.apply()) {
+		console.log('\n✅ Unlicode branding applied successfully!');
+		process.exit(0);
+	} else {
+		console.log('\n⚠️  Branding application completed with errors!');
+		process.exit(1);
+	}
+} else if (command === 'revert') {
+	if (manager.revert()) {
+		console.log('\n⚠️  Revert completed with errors!');
+		process.exit(1);
+	} else {
+		console.log('\n✅ Reverted to original branding successfully!');
+		process.exit(0);
+	}
 } else {
-	console.log('\n⚠️  Branding application completed with errors!');
+	console.log('Usage: node patch.js [apply|revert]');
+	console.log('  apply  - Apply Unlicode branding');
+	console.log('  revert - Revert to original branding');
 	process.exit(1);
 }
