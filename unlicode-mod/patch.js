@@ -29,14 +29,6 @@ const BRANDING_CONFIG = [
 // Facade class for branding operations
 class BrandingManager {
 	constructor() {
-		this.backupDir = path.join(__dirname, 'backups');
-		this.ensureBackupDir();
-	}
-
-	ensureBackupDir() {
-		if (!fs.existsSync(this.backupDir)) {
-			fs.mkdirSync(this.backupDir, { recursive: true });
-		}
 	}
 
 	apply() {
@@ -54,7 +46,6 @@ class BrandingManager {
 
 		BRANDING_CONFIG.forEach(({ filePath, originalText, brandedText }) => {
 			const fullFilePath = path.join(PROJECT_ROOT, filePath);
-			const backupPath = path.join(this.backupDir, path.basename(filePath));
 
 			if (!fs.existsSync(fullFilePath)) {
 				console.log(`⚠️  File not found: ${filePath}`);
@@ -64,9 +55,9 @@ class BrandingManager {
 
 			try {
 				if (operation === 'apply') {
-					hasErrors = this.applyBranding(fullFilePath, backupPath, originalText, brandedText, filePath);
+					hasErrors = this.applyBranding(fullFilePath, originalText, brandedText, filePath);
 				} else {
-					hasErrors = this.revertBranding(fullFilePath, backupPath, filePath);
+					hasErrors = this.revertBranding(fullFilePath, originalText, brandedText, filePath);
 				}
 			} catch (error) {
 				console.log(`❌ Error processing ${filePath}: ${error.message}`);
@@ -77,17 +68,12 @@ class BrandingManager {
 		return !hasErrors;
 	}
 
-	applyBranding(filePath, backupPath, originalText, brandedText, displayPath) {
+	applyBranding(filePath, originalText, brandedText, displayPath) {
 		const content = fs.readFileSync(filePath, 'utf8');
 
 		if (!content.includes(originalText)) {
 			console.log(`ℹ️  No changes needed in: ${displayPath}`);
 			return false;
-		}
-
-		// Create backup if it doesn't exist
-		if (!fs.existsSync(backupPath)) {
-			fs.writeFileSync(backupPath, content, 'utf8');
 		}
 
 		// Apply replacement
@@ -101,14 +87,20 @@ class BrandingManager {
 		return false;
 	}
 
-	revertBranding(filePath, backupPath, displayPath) {
-		if (!fs.existsSync(backupPath)) {
-			console.log(`⚠️  No backup found for: ${displayPath}`);
-			return true;
+	revertBranding(filePath, originalText, brandedText, displayPath) {
+		const content = fs.readFileSync(filePath, 'utf8');
+
+		if (!content.includes(brandedText)) {
+			console.log(`ℹ️  No branded text found in: ${displayPath}`);
+			return false;
 		}
 
-		const backupContent = fs.readFileSync(backupPath, 'utf8');
-		fs.writeFileSync(filePath, backupContent, 'utf8');
+		const updatedContent = content.replace(
+			new RegExp(brandedText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+			originalText
+		);
+
+		fs.writeFileSync(filePath, updatedContent, 'utf8');
 		console.log(`✅ Reverted branding in: ${displayPath}`);
 		return false;
 	}
