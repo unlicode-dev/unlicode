@@ -119,7 +119,7 @@ if (command === 'apply') {
 		process.exit(1);
 	}
 } else if (command === 'revert') {
-	if (manager.revert()) {
+	if (!manager.revert()) {
 		console.log('\n⚠️  Revert completed with errors!');
 		process.exit(1);
 	} else {
