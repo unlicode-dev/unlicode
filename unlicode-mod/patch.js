@@ -18,9 +18,9 @@ const __dirname = path.dirname(__filename);
 
 // Configuration
 const PROJECT_ROOT = path.join(__dirname, '..');
-const BRANDING_CONFIG = [
+const BRANDING_CONFIGURATIONS = [
 	{
-		filePath: 'src/vs/workbench/contrib/void/browser/react/src/void-settings-tsx/Settings.tsx',
+		sourceFilePath: 'src/vs/workbench/contrib/void/browser/react/src/void-settings-tsx/Settings.tsx',
 		originalText: "Void's Settings",
 		brandedText: "Unlicode AI Assistant Settings Latest"
 	}
@@ -28,9 +28,6 @@ const BRANDING_CONFIG = [
 
 // Facade class for branding operations
 class BrandingManager {
-	constructor() {
-	}
-
 	apply() {
 		console.log('Applying Unlicode Branding...\n');
 		return this.processFiles('apply');
@@ -42,43 +39,44 @@ class BrandingManager {
 	}
 
 	processFiles(operation) {
-		let hasErrors = false;
+		let hasProcessingErrors = false;
 
-		BRANDING_CONFIG.forEach(({ filePath, originalText, brandedText }) => {
-			const fullFilePath = path.join(PROJECT_ROOT, filePath);
+		BRANDING_CONFIGURATIONS.forEach(({ sourceFilePath, originalText, brandedText }) => {
+			const fullFilePath = path.join(PROJECT_ROOT, sourceFilePath);
 
 			if (!fs.existsSync(fullFilePath)) {
-				console.log(`⚠️  File not found: ${filePath}`);
-				hasErrors = true;
+				console.log(`⚠️  File not found: ${sourceFilePath}`);
+				hasProcessingErrors = true;
 				return;
 			}
 
 			try {
 				if (operation === 'apply') {
-					hasErrors = this.applyBranding(fullFilePath, originalText, brandedText, filePath);
+					hasProcessingErrors = this.applyBranding(fullFilePath, originalText, brandedText, sourceFilePath);
 				} else {
-					hasErrors = this.revertBranding(fullFilePath, originalText, brandedText, filePath);
+					hasProcessingErrors = this.revertBranding(fullFilePath, originalText, brandedText, sourceFilePath);
 				}
 			} catch (error) {
-				console.log(`❌ Error processing ${filePath}: ${error.message}`);
-				hasErrors = true;
+				console.log(`❌ Error processing ${sourceFilePath}: ${error.message}`);
+				hasProcessingErrors = true;
 			}
 		});
 
-		return !hasErrors;
+		return !hasProcessingErrors;
 	}
 
 	applyBranding(filePath, originalText, brandedText, displayPath) {
-		const content = fs.readFileSync(filePath, 'utf8');
+		const fileContent = fs.readFileSync(filePath, 'utf8');
 
-		if (!content.includes(originalText)) {
+		if (!fileContent.includes(originalText)) {
 			console.log(`ℹ️  No changes needed in: ${displayPath}`);
 			return false;
 		}
 
 		// Apply replacement
-		const updatedContent = content.replace(
-			new RegExp(originalText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+		const escapedOriginalText = this.escapeRegExp(originalText);
+		const updatedContent = fileContent.replace(
+			new RegExp(escapedOriginalText, 'g'),
 			brandedText
 		);
 
@@ -88,15 +86,16 @@ class BrandingManager {
 	}
 
 	revertBranding(filePath, originalText, brandedText, displayPath) {
-		const content = fs.readFileSync(filePath, 'utf8');
+		const fileContent = fs.readFileSync(filePath, 'utf8');
 
-		if (!content.includes(brandedText)) {
+		if (!fileContent.includes(brandedText)) {
 			console.log(`ℹ️  No branded text found in: ${displayPath}`);
 			return false;
 		}
 
-		const updatedContent = content.replace(
-			new RegExp(brandedText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+		const escapedBrandedText = this.escapeRegExp(brandedText);
+		const updatedContent = fileContent.replace(
+			new RegExp(escapedBrandedText, 'g'),
 			originalText
 		);
 
@@ -104,31 +103,39 @@ class BrandingManager {
 		console.log(`✅ Reverted branding in: ${displayPath}`);
 		return false;
 	}
+
+	escapeRegExp(string) {
+		return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	}
 }
 
 // Main execution
-const command = process.argv[2];
-const manager = new BrandingManager();
+function main() {
+	const command = process.argv[2];
+	const brandingManager = new BrandingManager();
 
-if (command === 'apply') {
-	if (manager.apply()) {
-		console.log('\n✅ Unlicode branding applied successfully!');
-		process.exit(0);
-	} else {
-		console.log('\n⚠️  Branding application completed with errors!');
+	try {
+		if (command === 'apply') {
+			const success = brandingManager.apply();
+			process.exit(success ? 0 : 1);
+		} else if (command === 'revert') {
+			const success = brandingManager.revert();
+			process.exit(success ? 0 : 1);
+		} else {
+			displayUsage();
+			process.exit(1);
+		}
+	} catch (error) {
+		console.error(`❌ Unexpected error: ${error.message}`);
 		process.exit(1);
 	}
-} else if (command === 'revert') {
-	if (!manager.revert()) {
-		console.log('\n⚠️  Revert completed with errors!');
-		process.exit(1);
-	} else {
-		console.log('\n✅ Reverted to original branding successfully!');
-		process.exit(0);
-	}
-} else {
+}
+
+function displayUsage() {
 	console.log('Usage: node patch.js [apply|revert]');
 	console.log('  apply  - Apply Unlicode branding');
 	console.log('  revert - Revert to original branding');
-	process.exit(1);
 }
+
+// Execute main function
+main();
